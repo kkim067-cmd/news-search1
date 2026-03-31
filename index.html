@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>네이버 뉴스 검색기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+    --border: #2a2a3d; --accent: #00e5a0; --accent2: #005eff;
+    --text: #e8e8f0; --muted: #6b6b8a; --danger: #ff4d6d;
+    --font-serif: 'Noto Serif KR', serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-serif); min-height: 100vh; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
+  }
+
+  /* LOGIN */
+  #login-screen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 44px 40px; width: 360px; position: relative; overflow: hidden; }
+  .login-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+  .login-logo { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
+  .login-title { font-size: 24px; font-weight: 900; margin-bottom: 6px; }
+  .login-sub { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+  .login-label { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+  .login-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); font-family: var(--font-mono); font-size: 14px; outline: none; transition: border-color 0.2s; margin-bottom: 16px; }
+  .login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,0.08); }
+  .login-btn { width: 100%; background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 13px; font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; }
+  .login-btn:hover { background: #00ffb3; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,0.25); }
+  .login-error { display: none; color: var(--danger); font-family: var(--font-mono); font-size: 12px; margin-top: 12px; text-align: center; }
+
+  /* MAIN */
+  #main-screen { display: none; }
+  .container { max-width: 920px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  header { padding: 48px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 36px; }
+  .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-tag { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
+  h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 900; letter-spacing: -1px; line-height: 1.1; }
+  h1 span { color: var(--accent); }
+  .subtitle { margin-top: 10px; color: var(--muted); font-size: 13px; font-family: var(--font-mono); }
+  .logout-btn { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-family: var(--font-mono); font-size: 11px; cursor: pointer; transition: all 0.2s; margin-top: 4px; }
+  .logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .section-title { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: '//'; opacity: 0.5; }
+
+  label { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 6px; text-transform: uppercase; }
+  input[type="text"], input[type="date"], select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: var(--font-mono); font-size: 13px; outline: none; transition: border-color 0.2s; }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,0.08); }
+  input::placeholder { color: var(--muted); }
+
+  .row { display: grid; gap: 14px; margin-bottom: 16px; }
+  .row-2 { grid-template-columns: 1fr 1fr; }
+  .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 13px; font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; width: 100%; }
+  .btn:hover { background: #00ffb3; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,0.25); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .alert { display: none; font-family: var(--font-mono); font-size: 12px; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; line-height: 1.6; white-space: pre-line; }
+  .alert-info { color: var(--accent); background: rgba(0,229,160,0.06); border: 1px solid rgba(0,229,160,0.2); }
+  .alert-error { color: var(--danger); background: rgba(255,77,109,0.06); border: 1px solid rgba(255,77,109,0.2); }
+
+  #results-section { display: none; }
+  .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+  .results-count { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+  .results-count strong { color: var(--accent); font-size: 22px; }
+  .export-btn { background: transparent; color: var(--accent); border: 1px solid var(--border); border-radius: 8px; padding: 9px 18px; font-family: var(--font-mono); font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .export-btn:hover { border-color: var(--accent); background: rgba(0,229,160,0.08); }
+
+  .news-list { display: flex; flex-direction: column; gap: 14px; }
+  .news-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; transition: all 0.2s; animation: fadeUp 0.35s ease both; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .news-card:hover { border-color: rgba(0,229,160,0.3); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
+  .news-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .news-source { font-family: var(--font-mono); font-size: 10px; color: var(--accent); background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.2); padding: 2px 8px; border-radius: 4px; }
+  .news-date { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .news-title { font-size: 16px; font-weight: 700; line-height: 1.5; margin-bottom: 6px; }
+  .news-title a { color: var(--text); text-decoration: none; transition: color 0.2s; }
+  .news-title a:hover { color: var(--accent); }
+  .news-desc { font-size: 13px; color: var(--muted); line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .news-desc b { color: #88e8c8; font-weight: 600; font-style: normal; }
+
+  .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .page-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 6px; font-family: var(--font-mono); font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,0.08); }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .page-info { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding: 0 12px; }
+
+  footer { text-align: center; padding: 36px 0 28px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); margin-top: 48px; }
+  .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid rgba(0,229,160,0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s ease; width: 0%; }
+
+  @media (max-width: 600px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Naver News Search</div>
+    <div class="login-title">팀 로그인</div>
+    <div class="login-sub">// 팀 비밀번호를 입력하세요</div>
+    <label class="login-label">비밀번호</label>
+    <input class="login-input" type="password" id="passwordInput" placeholder="••••••••">
+    <button class="login-btn" onclick="doLogin()">입장하기</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- 메인 화면 -->
+<div id="main-screen">
+  <div class="container">
+    <header>
+      <div class="header-row">
+        <div>
+          <div class="header-tag">Naver News Search</div>
+          <h1>네이버 뉴스<br><span>검색기</span></h1>
+          <div class="subtitle">// 키워드 · 기간 설정 · CSV 저장</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="section-title">검색 조건</div>
+      <div class="row">
+        <div><label>검색 키워드</label><input type="text" id="keyword" placeholder="예: 인공지능, 삼성전자, 기후변화"></div>
+      </div>
+      <div class="row row-2">
+        <div><label>시작일</label><input type="date" id="startDate"></div>
+        <div><label>종료일</label><input type="date" id="endDate"></div>
+      </div>
+      <div class="row row-3">
+        <div><label>정렬</label><select id="sortBy"><option value="date">날짜순</option><option value="sim">관련도순</option></select></div>
+        <div><label>페이지당 결과</label><select id="display"><option value="20" selected>20개</option><option value="50">50개</option><option value="100">100개</option></select></div>
+        <div><label>최대 수집량</label><select id="maxItems"><option value="100">100건</option><option value="300" selected>300건</option><option value="500">500건</option><option value="1000">1000건</option></select></div>
+      </div>
+      <button class="btn" id="searchBtn" onclick="startSearch()">검색 시작</button>
+    </div>
+
+    <div class="alert alert-info" id="statusEl"></div>
+    <div class="alert alert-error" id="errorEl"></div>
+
+    <div id="results-section">
+      <div class="results-header">
+        <div class="results-count">총 <strong id="totalCount">0</strong>건 수집</div>
+        <button class="export-btn" onclick="exportCSV()">↓ CSV 다운로드</button>
+      </div>
+      <div class="news-list" id="newsList"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <footer>네이버 검색 API · 팀 전용 서비스</footer>
+  </div>
+</div>
+
+<script>
+  const PAGE_SIZE = 20;
+  let allResults = [], currentPage = 1;
+  let authToken = localStorage.getItem('news_token') || '';
+
+  if (authToken) showMain();
+
+  const today = new Date(), lastMonth = new Date(today);
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  document.getElementById('endDate').value = today.toISOString().split('T')[0];
+  document.getElementById('startDate').value = lastMonth.toISOString().split('T')[0];
+
+  async function doLogin() {
+    const pw = document.getElementById('passwordInput').value;
+    const errEl = document.getElementById('loginError');
+    errEl.style.display = 'none';
+    try {
+      const res = await fetch('/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({password: pw}) });
+      const data = await res.json();
+      if (data.ok) { authToken = data.token; localStorage.setItem('news_token', authToken); showMain(); }
+      else { errEl.style.display = 'block'; errEl.textContent = data.error || '비밀번호가 틀렸습니다.'; }
+    } catch { errEl.style.display = 'block'; errEl.textContent = '서버에 연결할 수 없습니다.'; }
+  }
+
+  function doLogout() {
+    localStorage.removeItem('news_token'); authToken = '';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-screen').style.display = 'none';
+    document.getElementById('passwordInput').value = '';
+  }
+
+  function showMain() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display = 'block';
+  }
+
+  document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  const statusEl = document.getElementById('statusEl'), errorEl = document.getElementById('errorEl');
+  function showStatus(msg, p=null) {
+    statusEl.style.display='block'; errorEl.style.display='none';
+    const bar = p!==null ? `<div class="progress-bar-wrap"><div class="progress-bar" style="width:${Math.min(100,p)}%"></div></div>` : '';
+    statusEl.innerHTML = `<span class="spinner"></span>${msg}${bar}`;
+  }
+  function showError(msg) { errorEl.style.display='block'; errorEl.textContent=msg; statusEl.style.display='none'; }
+  function hideStatus() { statusEl.style.display='none'; }
+
+  function formatDate(str) {
+    try { const d=new Date(str); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }
+    catch { return str; }
+  }
+  function stripHtml(h) { return h.replace(/<[^>]*>/g,'').replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); }
+  function getSource(item) { try { return new URL(item.originallink||item.link).hostname.replace('www.',''); } catch { return '네이버뉴스'; } }
+
+  async function fetchPage(keyword, start, display, sort) {
+    const res = await fetch('/search?' + new URLSearchParams({query:keyword, display, start, sort, token:authToken}));
+    if (res.status === 401) { doLogout(); throw new Error('세션 만료. 다시 로그인해주세요.'); }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `서버 오류 ${res.status}`);
+    return data;
+  }
+
+  async function startSearch() {
+    const keyword=document.getElementById('keyword').value.trim();
+    const startDate=document.getElementById('startDate').value;
+    const endDate=document.getElementById('endDate').value;
+    const sort=document.getElementById('sortBy').value;
+    const display=parseInt(document.getElementById('display').value);
+    const maxItems=parseInt(document.getElementById('maxItems').value);
+
+    if (!keyword) return showError('검색 키워드를 입력해주세요.');
+    if (!startDate||!endDate) return showError('검색 기간을 설정해주세요.');
+    if (new Date(startDate)>new Date(endDate)) return showError('시작일이 종료일보다 늦습니다.');
+
+    const start_ts=new Date(startDate).getTime(), end_ts=new Date(endDate+'T23:59:59').getTime();
+    allResults=[]; currentPage=1;
+    document.getElementById('results-section').style.display='none';
+    document.getElementById('searchBtn').disabled=true;
+    document.getElementById('searchBtn').textContent='수집 중...';
+
+    let startIndex=1, stop=false;
+    try {
+      while (!stop && allResults.length < maxItems) {
+        showStatus(`수집 중… ${allResults.length}건 / 목표 ${maxItems}건`, (allResults.length/maxItems)*100);
+        const data = await fetchPage(keyword, startIndex, display, sort);
+        const items = data.items||[];
+        if (!items.length) break;
+        for (const item of items) {
+          const ts = new Date(item.pubDate).getTime();
+          if (sort==='date' && ts<start_ts) { stop=true; break; }
+          if (ts<start_ts||ts>end_ts) continue;
+          allResults.push(item);
+          if (allResults.length>=maxItems) { stop=true; break; }
+        }
+        startIndex+=display;
+        if (startIndex>1000||items.length<display) break;
+        await new Promise(r=>setTimeout(r,120));
+      }
+      if (!allResults.length) showError(`"${keyword}" — 선택 기간 내 결과 없음\n날짜 범위를 넓히거나 키워드를 바꿔보세요.`);
+      else { hideStatus(); document.getElementById('totalCount').textContent=allResults.length.toLocaleString(); document.getElementById('results-section').style.display='block'; renderPage(1); }
+    } catch(e) { showError(e.message); }
+    finally { document.getElementById('searchBtn').disabled=false; document.getElementById('searchBtn').textContent='검색 시작'; }
+  }
+
+  function renderPage(page) {
+    currentPage=page;
+    const items=allResults.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+    const list=document.getElementById('newsList'); list.innerHTML='';
+    items.forEach((item,i)=>{
+      const div=document.createElement('div'); div.className='news-card'; div.style.animationDelay=`${i*35}ms`;
+      div.innerHTML=`<div class="news-meta"><span class="news-source">${getSource(item)}</span><span class="news-date">${formatDate(item.pubDate)}</span></div><div class="news-title"><a href="${item.link}" target="_blank">${item.title}</a></div><div class="news-desc">${item.description}</div>`;
+      list.appendChild(div);
+    });
+    renderPagination();
+    list.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function renderPagination() {
+    const totalPages=Math.ceil(allResults.length/PAGE_SIZE);
+    const pag=document.getElementById('pagination'); pag.innerHTML='';
+    if (totalPages<=1) return;
+    const prev=document.createElement('button'); prev.className='page-btn'; prev.textContent='← 이전'; prev.disabled=currentPage===1; prev.onclick=()=>renderPage(currentPage-1); pag.appendChild(prev);
+    const info=document.createElement('span'); info.className='page-info'; info.textContent=`${currentPage} / ${totalPages}`; pag.appendChild(info);
+    const next=document.createElement('button'); next.className='page-btn'; next.textContent='다음 →'; next.disabled=currentPage===totalPages; next.onclick=()=>renderPage(currentPage+1); pag.appendChild(next);
+  }
+
+  function exportCSV() {
+    if (!allResults.length) return;
+    const keyword=document.getElementById('keyword').value.trim();
+    const s=document.getElementById('startDate').value, e=document.getElementById('endDate').value;
+    const headers=['번호','제목','날짜','언론사','요약','네이버링크','원문링크'];
+    const rows=allResults.map((item,i)=>[i+1,`"${stripHtml(item.title).replace(/"/g,'""')}"`,formatDate(item.pubDate),getSource(item),`"${stripHtml(item.description).replace(/"/g,'""')}"`,item.link,item.originallink||'']);
+    const csv='\uFEFF'+[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+    a.download=`naver_news_${keyword}_${s}_${e}.csv`; a.click();
+  }
+  document.addEventListener('keydown', e=>{ if(e.key==='Enter'&&e.target.id==='keyword') startSearch(); });
+</script>
+</body>
+</html>
