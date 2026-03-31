@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- saved from url=(0043)file:///C:/Users/NHN/Downloads/index_1.html -->
-<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>네이버 뉴스 검색기</title>
-<link rel="preconnect" href="https://fonts.googleapis.com/">
-<link href="./index_files/css2" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -145,8 +145,8 @@
       </div>
       <div class="row row-3">
         <div><label>정렬</label><select id="sortBy"><option value="date">날짜순</option><option value="sim">관련도순</option></select></div>
-        <div><label>페이지당 결과</label><select id="display"><option value="20" selected="">20개</option><option value="50">50개</option><option value="100">100개</option></select></div>
-        <div><label>최대 수집량</label><select id="maxItems"><option value="100">100건</option><option value="300" selected="">300건</option><option value="500">500건</option><option value="1000">1000건</option></select></div>
+        <div><label>페이지당 결과</label><select id="display"><option value="20" selected>20개</option><option value="50">50개</option><option value="100">100개</option></select></div>
+        <div><label>최대 수집량</label><select id="maxItems"><option value="100">100건</option><option value="300" selected>300건</option><option value="500">500건</option><option value="1000">1000건</option></select></div>
       </div>
       <button class="btn" id="searchBtn" onclick="startSearch()">검색 시작</button>
     </div>
@@ -352,6 +352,5 @@
   }
   document.addEventListener('keydown', e=>{ if(e.key==='Enter'&&e.target.id==='keyword') startSearch(); });
 </script>
-
-
-</body></html>
+</body>
+</html>
