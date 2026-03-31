@@ -221,34 +221,82 @@
   function stripHtml(h) { return h.replace(/<[^>]*>/g,'').replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); }
 
   const MEDIA_MAP = {
-    // 주요 신문
+    // 종합일간지
     'chosun.com':'조선일보','donga.com':'동아일보','joongang.co.kr':'중앙일보',
-    'hani.co.kr':'한겨레','khan.co.kr':'경향신문','ohmynews.com':'오마이뉴스',
-    'hankookilbo.com':'한국일보','munhwa.com':'문화일보','segye.com':'세계일보',
-    'kmib.co.kr':'국민일보','seoul.co.kr':'서울신문','busan.com':'부산일보',
-    'imaeil.com':'매일신문','kookje.co.kr':'국제신문','jnilbo.com':'전남일보',
+    'joongang.joins.com':'중앙일보','joins.com':'중앙일보',
+    'hani.co.kr':'한겨레','khan.co.kr':'경향신문','hankookilbo.com':'한국일보',
+    'munhwa.com':'문화일보','segye.com':'세계일보','kmib.co.kr':'국민일보',
+    'seoul.co.kr':'서울신문','naeil.com':'내일신문','kado.net':'강원도민일보',
+    'kwnews.co.kr':'강원일보','gnnews.net':'경남신문','kookje.co.kr':'국제신문',
+    'imaeil.com':'매일신문','msnet.co.kr':'매일신문','jnilbo.com':'전남일보',
+    'jjan.kr':'전북일보','domin.co.kr':'도민일보','jeju.co.kr':'제주일보',
+    'ihalla.com':'한라일보','ccdailynews.com':'충청일보','daejonilbo.com':'대전일보',
+    'joongdo.co.kr':'중도일보','gjtimes.co.kr':'광주타임즈','namdonews.com':'남도일보',
+    'kwangju.co.kr':'광주매일','siminilbo.co.kr':'시민일보','busan.com':'부산일보',
+    'ksilbo.co.kr':'경상일보','ulsanpress.com':'울산신문',
     // 경제지
     'hankyung.com':'한국경제','mk.co.kr':'매일경제','sedaily.com':'서울경제',
-    'etnews.com':'전자신문','etoday.co.kr':'이투데이','thebell.co.kr':'더벨',
-    'edaily.co.kr':'이데일리','mt.co.kr':'머니투데이','fnnews.com':'파이낸셜뉴스',
-    'heraldcorp.com':'헤럴드경제','bizwatch.co.kr':'비즈워치','newspim.com':'뉴스핌',
-    'inews24.com':'아이뉴스24','bloter.net':'블로터','zdnet.co.kr':'지디넷코리아',
-    // 방송
+    'fnnews.com':'파이낸셜뉴스','heraldcorp.com':'헤럴드경제','edaily.co.kr':'이데일리',
+    'mt.co.kr':'머니투데이','thebell.co.kr':'더벨','bizwatch.co.kr':'비즈워치',
+    'newspim.com':'뉴스핌','etoday.co.kr':'이투데이','asiae.co.kr':'아시아경제',
+    'ajunews.com':'아주경제','dailian.co.kr':'데일리안','newdaily.co.kr':'뉴데일리',
+    'tf.co.kr':'더팩트','thefact.co.kr':'더팩트','pennmike.com':'펜앤마이크',
+    'sisajournal-e.com':'시사저널e','biz.chosun.com':'조선비즈',
+    'economist.co.kr':'이코노미스트','economy.hankooki.com':'한국경제',
+    'moneys.mt.co.kr':'머니S','moneyn.co.kr':'머니투데이',
+    // IT/과학
+    'etnews.com':'전자신문','inews24.com':'아이뉴스24','zdnet.co.kr':'지디넷코리아',
+    'bloter.net':'블로터','itworld.co.kr':'IT월드','ciokorea.com':'CIO Korea',
+    'techholic.co.kr':'테크홀릭','aitimes.com':'AI타임스','aitimes.kr':'AI타임스',
+    'irobotnews.com':'로봇신문','ictnews.co.kr':'ICT뉴스','boannews.com':'보안뉴스',
+    'datanet.co.kr':'데이터넷','comworld.co.kr':'컴퓨터월드','ddaily.co.kr':'디지털데일리',
+    'digitaltoday.co.kr':'디지털투데이','itbiznews.com':'IT비즈뉴스',
+    'epnc.co.kr':'Electronics부품과 뉴스','kidd.co.kr':'한국기기산업',
+    // 게임
+    'thisisgame.com':'디스이즈게임','gamemeca.com':'게임메카','inven.co.kr':'인벤',
+    'ruliweb.com':'루리웹','gameshot.net':'게임샷','4gamers.co.kr':'포게이머',
+    'gametoc.co.kr':'게임톡','gamevu.com':'게임뷰','gamefocus.co.kr':'게임포커스',
+    'playforum.net':'플레이포럼','gaming.chosun.com':'조선게임',
+    // 방송/통신사
     'ytn.co.kr':'YTN','kbs.co.kr':'KBS','mbc.co.kr':'MBC','sbs.co.kr':'SBS',
     'jtbc.co.kr':'JTBC','tvchosun.com':'TV조선','ichannela.com':'채널A',
-    'mbn.co.kr':'MBN','yonhapnews.co.kr':'연합뉴스','yna.co.kr':'연합뉴스',
-    'newsis.com':'뉴시스','news1.kr':'뉴스1','newsprime.co.kr':'뉴스프라임',
-    // IT/게임
-    'thisisgame.com':'디스이즈게임','gamemeca.com':'게임메카','ruliweb.com':'루리웹',
-    'inven.co.kr':'인벤','gameshot.net':'게임샷','4gamers.co.kr':'포게이머',
-    'itworld.co.kr':'IT월드','ciokorea.com':'CIO Korea','infostock.co.kr':'인포스탁',
-    // 스포츠/연예
-    'sports.chosun.com':'스포츠조선','sportschosun.com':'스포츠조선',
+    'mbn.co.kr':'MBN','cbsi.co.kr':'CBS','cpbc.co.kr':'가톨릭평화방송',
+    'tbs.seoul.kr':'TBS','obs.co.kr':'OBS','g1tv.co.kr':'G1방송',
+    'yonhapnews.co.kr':'연합뉴스','yna.co.kr':'연합뉴스','yonhap.co.kr':'연합뉴스',
+    'newsis.com':'뉴시스','news1.kr':'뉴스1','news2day.co.kr':'뉴스투데이',
+    'newsprime.co.kr':'뉴스프라임','newscj.com':'뉴스천지',
+    // 스포츠
+    'sportschosun.com':'스포츠조선','sports.chosun.com':'스포츠조선',
     'isplus.com':'일간스포츠','osen.co.kr':'OSEN','mydaily.co.kr':'마이데일리',
+    'xportsnews.com':'엑스포츠뉴스','starnewskorea.com':'스타뉴스',
+    'sportalkorea.com':'스포탈코리아','footballist.co.kr':'풋볼리스트',
+    'goal.com':'골닷컴','nspna.com':'NSP통신','interfoot.co.kr':'인터풋볼',
+    // 연예
     'dispatch.co.kr':'디스패치','10asia.co.kr':'텐아시아','star.mt.co.kr':'스타투데이',
-    // 지역/기타
-    'pressian.com':'프레시안','sisain.co.kr':'시사IN','weekly.khan.co.kr':'주간경향',
-    'newstof.com':'뉴스토프','vop.co.kr':'민중의소리','mediatoday.co.kr':'미디어오늘',
+    'tvreport.co.kr':'TV리포트','hancinema.net':'한시네마','topstarnews.net':'톱스타뉴스',
+    'news.joins.com':'중앙일보','entertain.naver.com':'네이버연예',
+    'entertain.nate.com':'네이트연예','celeb.chosun.com':'조선셀럽',
+    // 시사/주간지
+    'pressian.com':'프레시안','sisain.co.kr':'시사IN','hptp.kr':'한겨레21',
+    'h21.hani.co.kr':'한겨레21','mediatoday.co.kr':'미디어오늘',
+    'journalist.or.kr':'기자협회보','pdjournal.com':'PD저널',
+    'ohmynews.com':'오마이뉴스','vop.co.kr':'민중의소리',
+    'newstof.com':'뉴스토프','newsnjoy.or.kr':'뉴스앤조이',
+    'catholicnews.co.kr':'가톨릭뉴스','beopbo.com':'법보신문',
+    // 경제/산업 전문
+    'koeaja.com':'코리아이코노미스트','koreaittimes.com':'코리아IT타임스',
+    'motortrend.co.kr':'모터트렌드','carlife.co.kr':'카라이프',
+    'autodaily.co.kr':'오토데일리','autotimes.co.kr':'오토타임즈',
+    'automotiveworld.co.kr':'오토모티브월드','topgear.co.kr':'탑기어',
+    'pharmnews.com':'팜뉴스','yakup.com':'약업신문','dailypharm.com':'데일리팜',
+    'medicaltimes.com':'메디칼타임즈','docdocdoc.co.kr':'청년의사',
+    'monews.co.kr':'메디컬옵저버','rapportian.com':'라포르시안',
+    'bokuennews.com':'복지뉴스','welfarenews.net':'복지뉴스',
+    'lawtimes.co.kr':'법률신문','lec.co.kr':'법률저널',
+    'edupress.kr':'에듀프레스','edujin.co.kr':'에듀진',
+    'hangyo.com':'한국교육신문','koreaedu.co.kr':'한국교육',
+    // 기타
+    'naver.com':'네이버뉴스','news.naver.com':'네이버뉴스',
   };
 
   function getSource(item) {
@@ -340,11 +388,12 @@
     if (!allResults.length) return;
     const keyword=document.getElementById('keyword').value.trim();
     const s=document.getElementById('startDate').value, e=document.getElementById('endDate').value;
-    const headers=['번호','제목 (클릭하면 기사로 이동)','날짜','언론사'];
+    // 컬럼: 번호 / 언론사 / 제목(하이퍼링크)
+    const headers=['번호','언론사','제목 (클릭하면 기사로 이동)'];
     const rows=allResults.map((item,i)=>{
       const title=stripHtml(item.title).replace(/"/g,'""');
       const link=item.link;
-      return [i+1, `"=HYPERLINK(""${link}"",""${title}"")"`, formatDate(item.pubDate), `"${getSource(item)}"`];
+      return [i+1, `"${getSource(item)}"`, `"=HYPERLINK(""${link}"",""${title}"")"`];
     });
     const csv='\uFEFF'+[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
