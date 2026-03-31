@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0043)file:///C:/Users/NHN/Downloads/index_1.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>네이버 뉴스 검색기</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link href="./index_files/css2" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -145,8 +145,8 @@
       </div>
       <div class="row row-3">
         <div><label>정렬</label><select id="sortBy"><option value="date">날짜순</option><option value="sim">관련도순</option></select></div>
-        <div><label>페이지당 결과</label><select id="display"><option value="20" selected>20개</option><option value="50">50개</option><option value="100">100개</option></select></div>
-        <div><label>최대 수집량</label><select id="maxItems"><option value="100">100건</option><option value="300" selected>300건</option><option value="500">500건</option><option value="1000">1000건</option></select></div>
+        <div><label>페이지당 결과</label><select id="display"><option value="20" selected="">20개</option><option value="50">50개</option><option value="100">100개</option></select></div>
+        <div><label>최대 수집량</label><select id="maxItems"><option value="100">100건</option><option value="300" selected="">300건</option><option value="500">500건</option><option value="1000">1000건</option></select></div>
       </div>
       <button class="btn" id="searchBtn" onclick="startSearch()">검색 시작</button>
     </div>
@@ -219,7 +219,50 @@
     catch { return str; }
   }
   function stripHtml(h) { return h.replace(/<[^>]*>/g,'').replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); }
-  function getSource(item) { try { return new URL(item.originallink||item.link).hostname.replace('www.',''); } catch { return '네이버뉴스'; } }
+
+  const MEDIA_MAP = {
+    // 주요 신문
+    'chosun.com':'조선일보','donga.com':'동아일보','joongang.co.kr':'중앙일보',
+    'hani.co.kr':'한겨레','khan.co.kr':'경향신문','ohmynews.com':'오마이뉴스',
+    'hankookilbo.com':'한국일보','munhwa.com':'문화일보','segye.com':'세계일보',
+    'kmib.co.kr':'국민일보','seoul.co.kr':'서울신문','busan.com':'부산일보',
+    'imaeil.com':'매일신문','kookje.co.kr':'국제신문','jnilbo.com':'전남일보',
+    // 경제지
+    'hankyung.com':'한국경제','mk.co.kr':'매일경제','sedaily.com':'서울경제',
+    'etnews.com':'전자신문','etoday.co.kr':'이투데이','thebell.co.kr':'더벨',
+    'edaily.co.kr':'이데일리','mt.co.kr':'머니투데이','fnnews.com':'파이낸셜뉴스',
+    'heraldcorp.com':'헤럴드경제','bizwatch.co.kr':'비즈워치','newspim.com':'뉴스핌',
+    'inews24.com':'아이뉴스24','bloter.net':'블로터','zdnet.co.kr':'지디넷코리아',
+    // 방송
+    'ytn.co.kr':'YTN','kbs.co.kr':'KBS','mbc.co.kr':'MBC','sbs.co.kr':'SBS',
+    'jtbc.co.kr':'JTBC','tvchosun.com':'TV조선','ichannela.com':'채널A',
+    'mbn.co.kr':'MBN','yonhapnews.co.kr':'연합뉴스','yna.co.kr':'연합뉴스',
+    'newsis.com':'뉴시스','news1.kr':'뉴스1','newsprime.co.kr':'뉴스프라임',
+    // IT/게임
+    'thisisgame.com':'디스이즈게임','gamemeca.com':'게임메카','ruliweb.com':'루리웹',
+    'inven.co.kr':'인벤','gameshot.net':'게임샷','4gamers.co.kr':'포게이머',
+    'itworld.co.kr':'IT월드','ciokorea.com':'CIO Korea','infostock.co.kr':'인포스탁',
+    // 스포츠/연예
+    'sports.chosun.com':'스포츠조선','sportschosun.com':'스포츠조선',
+    'isplus.com':'일간스포츠','osen.co.kr':'OSEN','mydaily.co.kr':'마이데일리',
+    'dispatch.co.kr':'디스패치','10asia.co.kr':'텐아시아','star.mt.co.kr':'스타투데이',
+    // 지역/기타
+    'pressian.com':'프레시안','sisain.co.kr':'시사IN','weekly.khan.co.kr':'주간경향',
+    'newstof.com':'뉴스토프','vop.co.kr':'민중의소리','mediatoday.co.kr':'미디어오늘',
+  };
+
+  function getSource(item) {
+    try {
+      const host = new URL(item.originallink||item.link).hostname.replace('www.','');
+      // 정확히 일치하는 도메인 먼저 찾기
+      if (MEDIA_MAP[host]) return MEDIA_MAP[host];
+      // 포함된 도메인 찾기 (서브도메인 대응)
+      for (const [domain, name] of Object.entries(MEDIA_MAP)) {
+        if (host.endsWith(domain)) return name;
+      }
+      return host;
+    } catch { return '네이버뉴스'; }
+  }
 
   async function fetchPage(keyword, start, display, sort) {
     const res = await fetch('/search?' + new URLSearchParams({query:keyword, display, start, sort, token:authToken}));
@@ -297,13 +340,18 @@
     if (!allResults.length) return;
     const keyword=document.getElementById('keyword').value.trim();
     const s=document.getElementById('startDate').value, e=document.getElementById('endDate').value;
-    const headers=['번호','제목','날짜','언론사','요약','네이버링크','원문링크'];
-    const rows=allResults.map((item,i)=>[i+1,`"${stripHtml(item.title).replace(/"/g,'""')}"`,formatDate(item.pubDate),getSource(item),`"${stripHtml(item.description).replace(/"/g,'""')}"`,item.link,item.originallink||'']);
+    const headers=['번호','제목 (클릭하면 기사로 이동)','날짜','언론사'];
+    const rows=allResults.map((item,i)=>{
+      const title=stripHtml(item.title).replace(/"/g,'""');
+      const link=item.link;
+      return [i+1, `"=HYPERLINK(""${link}"",""${title}"")"`, formatDate(item.pubDate), `"${getSource(item)}"`];
+    });
     const csv='\uFEFF'+[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
     a.download=`naver_news_${keyword}_${s}_${e}.csv`; a.click();
   }
   document.addEventListener('keydown', e=>{ if(e.key==='Enter'&&e.target.id==='keyword') startSearch(); });
 </script>
-</body>
-</html>
+
+
+</body></html>
