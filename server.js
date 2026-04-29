@@ -117,6 +117,48 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── 구글 검색 프록시 ─────────────────────────
+  if (pathname === '/google-search') {
+    const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+    const GOOGLE_CX      = process.env.GOOGLE_CX || '';
+
+    if (!GOOGLE_API_KEY || !GOOGLE_CX) {
+      sendJSON(res, 500, { error: '구글 API 키가 설정되지 않았습니다.' });
+      return;
+    }
+
+    const q       = parsed.query;
+    const token   = q.token || '';
+    const keyword = q.query || '';
+    const site    = q.site  || '';
+
+    if (!validTokens.has(token)) {
+      sendJSON(res, 401, { error: '로그인이 필요합니다.' });
+      return;
+    }
+    if (!keyword) { sendJSON(res, 400, { error: 'query 필요' }); return; }
+
+    const searchQuery = site ? `site:${site} ${keyword}` : keyword;
+    const apiPath = `/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(searchQuery)}&num=10&sort=date`;
+
+    const proxyReq = https.request({
+      hostname: 'www.googleapis.com',
+      path: apiPath,
+      method: 'GET',
+    }, (proxyRes) => {
+      let data = '';
+      proxyRes.on('data', c => data += c);
+      proxyRes.on('end', () => {
+        res.writeHead(proxyRes.statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(data);
+      });
+    });
+
+    proxyReq.on('error', e => sendJSON(res, 500, { error: e.message }));
+    proxyReq.end();
+    return;
+  }
+
   res.writeHead(404); res.end();
 });
 
