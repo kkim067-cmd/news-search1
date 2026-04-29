@@ -102,6 +102,16 @@
   .progress-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; }
   .progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s ease; width: 0%; }
 
+  .site-check {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+    cursor: pointer; transition: all 0.2s; text-transform: none; letter-spacing: 0;
+  }
+  .site-check:hover { border-color: var(--accent); color: var(--text); }
+  .site-check input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+  .site-check:has(input:checked) { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,0.06); }
   @media (max-width: 600px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
@@ -148,6 +158,18 @@
         <div><label>정렬</label><select id="sortBy"><option value="date">날짜순</option><option value="sim">관련도순</option></select></div>
         <div><label>페이지당 결과</label><select id="display"><option value="20" selected>20개</option><option value="50">50개</option><option value="100">100개</option></select></div>
         <div><label>최대 수집량</label><select id="maxItems"><option value="100">100건</option><option value="300" selected>300건</option><option value="500">500건</option><option value="1000">1000건</option></select></div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label>추가 매체 (네이버 미노출 사이트)</label>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap:8px; margin-top:8px;">
+          <label class="site-check"><input type="checkbox" value="gamtoon.com"> 게임툰</label>
+          <label class="site-check"><input type="checkbox" value="newstoon.com"> 뉴스툰</label>
+          <label class="site-check"><input type="checkbox" value="ruliweb.com"> 루리웹</label>
+          <label class="site-check"><input type="checkbox" value="playforum.net"> 플레이포럼</label>
+          <label class="site-check"><input type="checkbox" value="gameinsight.co.kr"> 게임인사이트</label>
+          <label class="site-check"><input type="checkbox" value="gamey.kr"> 게이미</label>
+          <label class="site-check"><input type="checkbox" value="ipnn.co.kr"> IPNN</label>
+        </div>
       </div>
       <button class="btn" id="searchBtn" onclick="startSearch()">검색 시작</button>
     </div>
@@ -333,27 +355,34 @@
   }
 
   async function startSearch() {
-    const keyword=document.getElementById('keyword').value.trim();
-    const startDate=document.getElementById('startDate').value;
-    const endDate=document.getElementById('endDate').value;
-    const sort=document.getElementById('sortBy').value;
-    const display=parseInt(document.getElementById('display').value);
-    const maxItems=parseInt(document.getElementById('maxItems').value);
+    const keyword   = document.getElementById('keyword').value.trim();
+    const startDate = document.getElementById('startDate').value;
+    const endDate   = document.getElementById('endDate').value;
+    const sort      = document.getElementById('sortBy').value;
+    const display   = parseInt(document.getElementById('display').value);
+    const maxItems  = parseInt(document.getElementById('maxItems').value);
+
+    // 선택된 추가 매체
+    const checkedSites = [...document.querySelectorAll('.site-check input:checked')].map(el => el.value);
 
     if (!keyword) return showError('검색 키워드를 입력해주세요.');
     if (!startDate||!endDate) return showError('검색 기간을 설정해주세요.');
     if (new Date(startDate)>new Date(endDate)) return showError('시작일이 종료일보다 늦습니다.');
 
-    const start_ts=new Date(startDate).getTime(), end_ts=new Date(endDate+'T23:59:59').getTime();
+    const start_ts = new Date(startDate).getTime();
+    const end_ts   = new Date(endDate+'T23:59:59').getTime();
+
     allResults=[]; currentPage=1;
     document.getElementById('results-section').style.display='none';
     document.getElementById('searchBtn').disabled=true;
     document.getElementById('searchBtn').textContent='수집 중...';
 
-    let startIndex=1, stop=false;
     try {
+      // ── 1. 네이버 기본 검색 ──────────────────────
+      showStatus('네이버 검색 중…', 0);
+      let startIndex=1, stop=false;
       while (!stop && allResults.length < maxItems) {
-        showStatus(`수집 중… ${allResults.length}건 / 목표 ${maxItems}건`, (allResults.length/maxItems)*100);
+        showStatus(`네이버 수집 중… ${allResults.length}건`, (allResults.length/maxItems)*70);
         const data = await fetchPage(keyword, startIndex, display, sort);
         const items = data.items||[];
         if (!items.length) break;
@@ -368,10 +397,51 @@
         if (startIndex>1000||items.length<display) break;
         await new Promise(r=>setTimeout(r,120));
       }
-      if (!allResults.length) showError(`"${keyword}" — 선택 기간 내 결과 없음\n날짜 범위를 넓히거나 키워드를 바꿔보세요.`);
-      else { hideStatus(); document.getElementById('totalCount').textContent=allResults.length.toLocaleString(); document.getElementById('results-section').style.display='block'; renderPage(1); }
+
+      // ── 2. 추가 매체 site: 검색 ─────────────────
+      for (let i=0; i<checkedSites.length; i++) {
+        const site = checkedSites[i];
+        const siteLabel = document.querySelector(`.site-check input[value="${site}"]`).parentElement.textContent.trim();
+        showStatus(`${siteLabel} 검색 중… (${i+1}/${checkedSites.length})`, 70 + (i/checkedSites.length)*25);
+
+        const siteKeyword = `site:${site} ${keyword}`;
+        let sIdx=1, sStop=false, siteResults=[];
+        while (!sStop && siteResults.length < 100) {
+          const data = await fetchPage(siteKeyword, sIdx, 100, 'date');
+          const items = data.items||[];
+          if (!items.length) break;
+          for (const item of items) {
+            const ts = new Date(item.pubDate).getTime();
+            if (ts<start_ts) { sStop=true; break; }
+            if (ts>end_ts) continue;
+            // 중복 제거 (링크 기준)
+            if (!allResults.some(r => r.link===item.link)) {
+              siteResults.push(item);
+            }
+          }
+          sIdx+=100;
+          if (sIdx>1000||items.length<100) break;
+          await new Promise(r=>setTimeout(r,150));
+        }
+        allResults.push(...siteResults);
+      }
+
+      // ── 3. 날짜순 정렬 ──────────────────────────
+      allResults.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+
+      if (!allResults.length) {
+        showError(`"${keyword}" — 선택 기간 내 결과 없음\n날짜 범위를 넓히거나 키워드를 바꿔보세요.`);
+      } else {
+        hideStatus();
+        document.getElementById('totalCount').textContent = allResults.length.toLocaleString();
+        document.getElementById('results-section').style.display = 'block';
+        renderPage(1);
+      }
     } catch(e) { showError(e.message); }
-    finally { document.getElementById('searchBtn').disabled=false; document.getElementById('searchBtn').textContent='검색 시작'; }
+    finally {
+      document.getElementById('searchBtn').disabled=false;
+      document.getElementById('searchBtn').textContent='검색 시작';
+    }
   }
 
   function renderPage(page) {
