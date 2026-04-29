@@ -361,8 +361,6 @@
     const sort      = document.getElementById('sortBy').value;
     const display   = parseInt(document.getElementById('display').value);
     const maxItems  = parseInt(document.getElementById('maxItems').value);
-
-    // 선택된 추가 매체
     const checkedSites = [...document.querySelectorAll('.site-check input:checked')].map(el => el.value);
 
     if (!keyword) return showError('검색 키워드를 입력해주세요.');
@@ -379,10 +377,9 @@
 
     try {
       // ── 1. 네이버 기본 검색 ──────────────────────
-      showStatus('네이버 검색 중…', 0);
       let startIndex=1, stop=false;
       while (!stop && allResults.length < maxItems) {
-        showStatus(`네이버 수집 중… ${allResults.length}건`, (allResults.length/maxItems)*70);
+        showStatus(`네이버 수집 중… ${allResults.length}건`, (allResults.length/maxItems)*60);
         const data = await fetchPage(keyword, startIndex, display, sort);
         const items = data.items||[];
         if (!items.length) break;
@@ -398,32 +395,54 @@
         await new Promise(r=>setTimeout(r,120));
       }
 
-      // ── 2. 추가 매체 site: 검색 ─────────────────
+      // ── 2. 구글 추가 매체 검색 ───────────────────
       for (let i=0; i<checkedSites.length; i++) {
         const site = checkedSites[i];
         const siteLabel = document.querySelector(`.site-check input[value="${site}"]`).parentElement.textContent.trim();
-        showStatus(`${siteLabel} 검색 중… (${i+1}/${checkedSites.length})`, 70 + (i/checkedSites.length)*25);
+        showStatus(`구글에서 ${siteLabel} 검색 중… (${i+1}/${checkedSites.length})`, 60 + (i/checkedSites.length)*35);
 
-        const siteKeyword = `site:${site} ${keyword}`;
-        let sIdx=1, sStop=false, siteResults=[];
-        while (!sStop && siteResults.length < 100) {
-          const data = await fetchPage(siteKeyword, sIdx, 100, 'date');
-          const items = data.items||[];
-          if (!items.length) break;
+        try {
+          const res = await fetch(`/google-search?` + new URLSearchParams({
+            query: keyword, site, token: authToken
+          }));
+          if (res.status === 401) { doLogout(); throw new Error('세션 만료'); }
+          const data = await res.json();
+
+          if (data.error) {
+            console.warn(`구글 검색 오류 (${site}):`, data.error);
+            continue;
+          }
+
+          const items = data.items || [];
           for (const item of items) {
-            const ts = new Date(item.pubDate).getTime();
-            if (ts<start_ts) { sStop=true; break; }
-            if (ts>end_ts) continue;
-            // 중복 제거 (링크 기준)
-            if (!allResults.some(r => r.link===item.link)) {
-              siteResults.push(item);
+            // 날짜 파싱 (구글은 snippet에서 날짜 추출)
+            const pubDate = item.pagemap?.metatags?.[0]?.['article:published_time']
+                         || item.pagemap?.metatags?.[0]?.['og:updated_time']
+                         || item.pagemap?.newsarticle?.[0]?.datepublished
+                         || new Date().toISOString();
+
+            const ts = new Date(pubDate).getTime();
+            if (ts < start_ts || ts > end_ts) continue;
+
+            // 네이버 형식으로 변환
+            const converted = {
+              title: item.htmlTitle || item.title,
+              link: item.link,
+              originallink: item.link,
+              description: item.htmlSnippet || item.snippet || '',
+              pubDate: pubDate,
+              _source: 'google'
+            };
+
+            // 중복 제거
+            if (!allResults.some(r => r.link === item.link)) {
+              allResults.push(converted);
             }
           }
-          sIdx+=100;
-          if (sIdx>1000||items.length<100) break;
-          await new Promise(r=>setTimeout(r,150));
+        } catch(e) {
+          console.warn(`${site} 검색 실패:`, e.message);
         }
-        allResults.push(...siteResults);
+        await new Promise(r=>setTimeout(r,200));
       }
 
       // ── 3. 날짜순 정렬 ──────────────────────────
